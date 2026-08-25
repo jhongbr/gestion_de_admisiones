@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gestion-de-admisiones
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/gestion_admisiones
+    username: gestion_admisiones_user
+    password: ${POSTGRES_PASSWORD}
+  flyway:
+    url: jdbc:postgresql://localhost:5432/gestion_admisiones
+    user: gestion_admisiones_user
+    password: ${POSTGRES_PASSWORD}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiracion-minutos: 60
