@@ -1,0 +1,80 @@
+# Stack de producción para correr en la EC2 de AWS.
+# A diferencia de docker-compose.prod.yml (que usa imágenes construidas
+# localmente con `docker build`), este descarga las imágenes ya publicadas
+# por GitHub Actions en GitHub Container Registry.
+#
+# Uso en la EC2 (necesita Docker y Docker Compose ya instalados):
+#   1. Crea un archivo .env en esta misma carpeta con:
+#        POSTGRES_PASSWORD=...
+#        JWT_SECRET=...
+#        ADMIN_SEED_EMAIL=...
+#        ADMIN_SEED_PASSWORD=...
+#        CORS_ALLOWED_ORIGINS=http://<IP-o-dominio-publico-de-la-EC2>:3000
+#      (usa valores de producción, no tienen que ser los mismos que usas en local)
+#   2. docker compose -f docker-compose.ec2.yml pull
+#   3. docker compose -f docker-compose.ec2.yml up -d
+#
+# Para actualizar a una versión nueva después de un push a main:
+#   docker compose -f docker-compose.ec2.yml pull
+#   docker compose -f docker-compose.ec2.yml up -d
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: gestion-admisiones-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gestion_admisiones
+      POSTGRES_USER: gestion_admisiones_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  clamav:
+    image: clamav/clamav:stable
+    container_name: gestion-admisiones-clamav
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+    networks:
+      - app_network
+
+  backend:
+    image: ghcr.io/jhongbr/gestion_de_admisiones:latest
+    container_name: gestion-admisiones-backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - clamav
+    environment:
+      DB_HOST: postgres
+      CLAMAV_HOST: clamav
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-}
+    ports:
+      - "8080:8080"
+    networks:
+      - app_network
+
+  frontend:
+    image: ghcr.io/jhongbr/unac-inscripciones:latest
+    container_name: unac-inscripciones-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+
+volumes:
+  postgres_data:
+  clamav_data:
