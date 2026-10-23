@@ -1,4 +1,4 @@
-package com.projecto.gestiondeadmisiones.infrastructure.entrypoints.aspirante.dtoRequest;
+package com.projecto.gestiondeadmisiones.infrastructure.entrypoints.dto.aspirante.dtoRequest;
 
 import com.projecto.gestiondeadmisiones.domain.model.enums.Genero;
 import com.projecto.gestiondeadmisiones.domain.model.enums.TipoDocumento;

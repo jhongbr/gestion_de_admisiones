@@ -16,20 +16,15 @@ public class RegistrarAspiranteUseCase {
     private final AspiranteRepository aspiranteRepository;
     private final PasswordEncoderPort passwordEncoderPort;
 
-    public Mono<Aspirante> ejecutar(RegistroAspiranteComando comando) {
-        return aspiranteRepository.existePorCorreo(comando.getCorreoElectronico())
+    public Mono<Aspirante> ejecutar(Aspirante aspirante, String passwordPlano) {
+        return aspiranteRepository.existePorCorreo(aspirante.getCorreoElectronico())
                 .flatMap(existe -> {
                     if (existe) {
-                        return Mono.error(new CorreoYaRegistradoException(comando.getCorreoElectronico()));
+                        return Mono.error(new CorreoYaRegistradoException(aspirante.getCorreoElectronico()));
                     }
 
-                    String contrasenaHasheada = passwordEncoderPort.codificar(comando.getContrasenaPlana());
-
-                    Aspirante nuevoAspirante = Aspirante.builder()
-                            .nombres(comando.getNombres())
-                            .apellidos(comando.getApellidos())
-                            .correoElectronico(comando.getCorreoElectronico())
-                            .passwordHash(contrasenaHasheada)
+                    Aspirante nuevoAspirante = aspirante.toBuilder()
+                            .passwordHash(passwordEncoderPort.codificar(passwordPlano))
                             .fechaCreacionCuenta(LocalDateTime.now())
                             .build();
 

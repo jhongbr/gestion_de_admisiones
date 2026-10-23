@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: gestion-de-admisiones
   r2dbc:
@@ -12,8 +14,18 @@ spring:
     url: jdbc:postgresql://localhost:5432/gestion_admisiones
     user: gestion_admisiones_user
     password: ${POSTGRES_PASSWORD}
+  webflux:
+    multipart:
+      max-in-memory-size: 5MB
+      max-disk-usage-per-part: 5MB
 
 app:
   jwt:
     secret: ${JWT_SECRET}
     expiracion-minutos: 60
+  admin-seed:
+    correo: ${ADMIN_SEED_EMAIL:}
+    password: ${ADMIN_SEED_PASSWORD:}
+  clamav:
+    host: ${CLAMAV_HOST:localhost}
+    port: ${CLAMAV_PORT:3310}

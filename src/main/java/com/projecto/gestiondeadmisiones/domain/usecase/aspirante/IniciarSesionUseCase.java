@@ -3,6 +3,7 @@ package com.projecto.gestiondeadmisiones.domain.usecase.aspirante;
 import com.projecto.gestiondeadmisiones.domain.model.aspirante.Aspirante;
 import com.projecto.gestiondeadmisiones.domain.model.aspirante.gateway.AspiranteRepository;
 import com.projecto.gestiondeadmisiones.domain.model.aspirante.gateway.PasswordEncoderPort;
+import com.projecto.gestiondeadmisiones.domain.model.exceptions.CredencialesInvalidasException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -15,6 +16,6 @@ public class IniciarSesionUseCase {
     public Mono<Aspirante> ejecutar(String correoElectronico, String passwordPlano){
         return aspiranteRepository.obtenerPorCorreo(correoElectronico)
                 .filter(aspirante -> passwordEncoderPort.verificar(passwordPlano, aspirante.getPasswordHash()))
-                .switchIfEmpty(Mono.error(new RuntimeException("Correo o contraseña incorrectos")));
+                .switchIfEmpty(Mono.error(new CredencialesInvalidasException()));
     }
 }

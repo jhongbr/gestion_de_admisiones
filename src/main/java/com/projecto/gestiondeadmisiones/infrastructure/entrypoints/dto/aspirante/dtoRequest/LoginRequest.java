@@ -1,4 +1,4 @@
-package com.projecto.gestiondeadmisiones.infrastructure.entrypoints.aspirante.dtoRequest;
+package com.projecto.gestiondeadmisiones.infrastructure.entrypoints.dto.aspirante.dtoRequest;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

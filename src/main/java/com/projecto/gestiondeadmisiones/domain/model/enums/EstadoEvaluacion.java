@@ -4,6 +4,6 @@ public enum EstadoEvaluacion {
 
     PENDIENTE,
     EVALUANDO,
-    APROVADO,
+    APROBADO,
     NO_ADMITIDO
 }

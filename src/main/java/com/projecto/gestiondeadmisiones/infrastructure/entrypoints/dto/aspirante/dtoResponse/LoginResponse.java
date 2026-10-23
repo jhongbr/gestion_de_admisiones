@@ -1,4 +1,4 @@
-package com.projecto.gestiondeadmisiones.infrastructure.entrypoints.aspirante.dtoResponse;
+package com.projecto.gestiondeadmisiones.infrastructure.entrypoints.dto.aspirante.dtoResponse;
 
 import lombok.Builder;
 import lombok.Getter;
