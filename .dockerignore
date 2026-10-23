@@ -1,0 +1,11 @@
+.git
+.gradle
+build
+out
+*.log
+.env
+.env.*
+!.env.example
+runbook-n8n-recordatorios.md
+.idea
+*.iml

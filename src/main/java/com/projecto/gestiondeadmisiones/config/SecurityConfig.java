@@ -4,6 +4,7 @@ import com.projecto.gestiondeadmisiones.infrastructure.entrypoints.config.JsonAc
 import com.projecto.gestiondeadmisiones.infrastructure.entrypoints.config.JsonAuthenticationEntryPoint;
 import com.projecto.gestiondeadmisiones.infrastructure.helpers.jwt.JwtReactiveAuthenticationManager;
 import com.projecto.gestiondeadmisiones.infrastructure.helpers.jwt.JwtServerAuthenticationConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -41,7 +42,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                         .authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/api/aspirantes/registro", "/api/aspirantes/login", "/api/personal/login").permitAll()
+                        .pathMatchers("/api/aspirantes/registro", "/api/aspirantes/login", "/api/personal/login", "/actuator/health").permitAll()
                         .pathMatchers("/api/personal/registro").hasRole("ADMISIONES")
                         .pathMatchers("/api/tesoreria/inscripciones/*/validar-pago").hasRole("TESORERIA")
                         .pathMatchers("/api/evaluacion/inscripciones/*/evaluar").hasRole("EVALUACION")
@@ -55,10 +56,14 @@ public class SecurityConfig {
                 .build();
     }
 
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuracion = new CorsConfiguration();
-        configuracion.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuracion.setAllowedOrigins(
+                List.of(allowedOrigins.split(",")).stream().map(String::trim).toList());
         configuracion.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuracion.setAllowedHeaders(List.of("Content-Type", "Authorization"));
         configuracion.setAllowCredentials(true);
