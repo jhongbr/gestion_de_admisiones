@@ -31,3 +31,8 @@ app:
   clamav:
     host: ${CLAMAV_HOST:localhost}
     port: ${CLAMAV_PORT:3310}
+  s3:
+    bucket-name: ${S3_BUCKET_NAME:gestion-admisiones-uploads-unac}
+
+aws:
+  region: ${AWS_REGION:us-west-2}

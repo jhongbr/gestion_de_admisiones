@@ -52,12 +52,12 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Component
 @RequiredArgsConstructor
@@ -78,6 +78,10 @@ public class Handler {
     private final RegistrarPersonalUseCase registrarPersonalUseCase;
     private final IniciarSesionPersonalUseCase iniciarSesionPersonalUseCase;
     private final EscanerArchivosPort escanerArchivosPort;
+    private final S3Client s3Client;
+
+    @Value("${app.s3.bucket-name}")
+    private String s3BucketName;
 
     // ---------- Aspirante: registro ----------
 
@@ -191,17 +195,23 @@ public class Handler {
     private Mono<String> escribirArchivo(byte[] contenido, String nombreOriginal, Long aspiranteId, String tipo) {
         String extension = obtenerExtension(nombreOriginal);
         String nombreArchivo = tipo + "_" + aspiranteId + "_" + System.currentTimeMillis() + extension;
-        Path carpeta = Paths.get("uploads/inscripciones");
-        Path destino = carpeta.resolve(nombreArchivo);
+        String llaveS3 = "inscripciones/" + nombreArchivo;
 
+        // Antes esto escribia en uploads/inscripciones (disco local de la EC2,
+        // se perdia en cada destroy/recreate del contenedor). Ahora sube a S3
+        // (bucket aws_s3_bucket.uploads en Terraform), que sobrevive al ciclo
+        // destroy/deploy de la EC2.
         return Mono.fromCallable(() -> {
-                    Files.createDirectories(carpeta);
-                    Files.write(destino, contenido);
-                    return "/uploads/inscripciones/" + nombreArchivo;
+                    PutObjectRequest request = PutObjectRequest.builder()
+                            .bucket(s3BucketName)
+                            .key(llaveS3)
+                            .build();
+                    s3Client.putObject(request, RequestBody.fromBytes(contenido));
+                    return llaveS3;
                 })
                 .subscribeOn(Schedulers.boundedElastic())
-                .onErrorMap(IOException.class,
-                        e -> new RuntimeException("No se pudo almacenar el archivo", e));
+                .onErrorMap(e -> !(e instanceof ArchivoInseguroException),
+                        e -> new RuntimeException("No se pudo almacenar el archivo en S3", e));
     }
 
     private void validarArchivo(FilePart archivo) {

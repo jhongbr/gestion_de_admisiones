@@ -3,13 +3,24 @@
 # localmente con `docker build`), este descarga las imágenes ya publicadas
 # por GitHub Actions en GitHub Container Registry.
 #
+# Postgres ya NO corre aquí: se movió a RDS (ver terraform-single-ec2-deployment,
+# recurso aws_db_instance.app_db) para que los datos sobrevivan al ciclo
+# destroy/deploy de la EC2. DB_HOST debe ser el endpoint de ese RDS (lo da
+# el output "rds_endpoint" del pipeline de Terraform).
+#
+# Los uploads de aspirantes tampoco se guardan en disco local: van al bucket
+# S3 (aws_s3_bucket.uploads), S3_BUCKET_NAME debe coincidir con var.s3_bucket_name.
+#
 # Uso en la EC2 (necesita Docker y Docker Compose ya instalados):
 #   1. Crea un archivo .env en esta misma carpeta con:
-#        POSTGRES_PASSWORD=...
+#        DB_HOST=<endpoint de RDS, output rds_endpoint del pipeline>
+#        POSTGRES_PASSWORD=...               (debe ser igual al TF_VAR_db_password usado en el pipeline)
 #        JWT_SECRET=...
 #        ADMIN_SEED_EMAIL=...
 #        ADMIN_SEED_PASSWORD=...
 #        CORS_ALLOWED_ORIGINS=http://<IP-o-dominio-publico-de-la-EC2>:3000
+#        S3_BUCKET_NAME=gestion-admisiones-uploads-unac
+#        AWS_REGION=us-west-2
 #      (usa valores de producción, no tienen que ser los mismos que usas en local)
 #   2. docker compose -f docker-compose.ec2.yml pull
 #   3. docker compose -f docker-compose.ec2.yml up -d
@@ -19,19 +30,6 @@
 #   docker compose -f docker-compose.ec2.yml up -d
 
 services:
-  postgres:
-    image: postgres:16
-    container_name: gestion-admisiones-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: gestion_admisiones
-      POSTGRES_USER: gestion_admisiones_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app_network
-
   clamav:
     image: clamav/clamav:stable
     container_name: gestion-admisiones-clamav
@@ -46,16 +44,17 @@ services:
     container_name: gestion-admisiones-backend
     restart: unless-stopped
     depends_on:
-      - postgres
       - clamav
     environment:
-      DB_HOST: postgres
+      DB_HOST: ${DB_HOST}
       CLAMAV_HOST: clamav
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-}
       ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-gestion-admisiones-uploads-unac}
+      AWS_REGION: ${AWS_REGION:-us-west-2}
     ports:
       - "8080:8080"
     networks:
@@ -72,9 +71,23 @@ services:
     networks:
       - app_network
 
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: gestion-admisiones-n8n
+    restart: unless-stopped
+    environment:
+      - GENERIC_TIMEZONE=America/Bogota
+      - TZ=America/Bogota
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app_network
+
 networks:
   app_network:
 
 volumes:
-  postgres_data:
   clamav_data:
+  n8n_data:
