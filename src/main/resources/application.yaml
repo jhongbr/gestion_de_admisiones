@@ -7,11 +7,11 @@ spring:
   application:
     name: gestion-de-admisiones
   r2dbc:
-    url: r2dbc:postgresql://${DB_HOST:localhost}:5432/gestion_admisiones
+    url: r2dbc:postgresql://${DB_HOST:localhost}:5432/gestion_admisiones?ssl=true&sslMode=require
     username: gestion_admisiones_user
     password: ${POSTGRES_PASSWORD}
   flyway:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/gestion_admisiones
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/gestion_admisiones?ssl=true&sslmode=require
     user: gestion_admisiones_user
     password: ${POSTGRES_PASSWORD}
   webflux:
